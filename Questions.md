@@ -1,0 +1,3 @@
+1    What technical/business constraints should the data storage component of the program architecture meet to fulfill the requirement described by the customer in paragraph "Statistics"? So what kind of component(s) (listed in the lecture) will the architecture need?
+
+2    What business constraint should the architecture meet to fulfill the requirement describe in the paragraph "Alert"? Which component to choose?
