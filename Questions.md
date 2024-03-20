@@ -1,3 +1,5 @@
 1    What technical/business constraints should the data storage component of the program architecture meet to fulfill the requirement described by the customer in paragraph "Statistics"? So what kind of component(s) (listed in the lecture) will the architecture need?
 
 2    What business constraint should the architecture meet to fulfill the requirement describe in the paragraph "Alert"? Which component to choose?
+    
+    To meet the need for fast, efficient alert processing, we have opted for a distributed streaming architecture. This approach involves several distinct consumer groups, one of which is specifically dedicated to alert management. This segmentation significantly reduces the time needed to process reports. In addition, to ensure quick and accurate transmission of alerts to the right police stations, we decided to use a distributed streaming architecture once again.
