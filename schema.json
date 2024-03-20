@@ -1,6 +1,6 @@
 {
     "id": 2,
-    "timestamp": "2019-07-04T13:33:03.969Z",
+    "timestamp": "2023-07-04T13:33:03.969Z",
     "pos": {
         "lon": 6.11499,
         "lat": 49.80404
@@ -9,5 +9,5 @@
     "surface": 350,
     "speed": 30,
     "battery": 80,
-    "temp": 42
+    "temperature": 42
 }
