@@ -4,7 +4,7 @@ Raw data: The raw data collected by the drones is sent in the form of JSON files
 
 Storage of current information on the area to be monitored: To store this data, we opted for a Cassandra database (fast distributed NoSQL for writing). The two constraints chosen for this database are Availability and Partioning, and the fact that it scales horizontally is an advantage for us. In fact, the frequency of report arrivals is very high, so we need to have access to the database at all times. As this system is designed to ensure the safety of a large number of people at major events, it must be able to function even during a machine breakdown (non-general outage).
 
-On the datalake side: in order not to lose speed, we opted for another cassandra database storing all modifications made over a given period (e.g. 24h). The aim would be to efficiently store the data coming from processing, so as not to delay the processing to be carried out on the stream, and then to transfer it to the datalake (HDFS) without any major time constraints.
+On the datalake side: in order not to lose speed, we opted for another cassandra database (AP) storing all modifications made over a given period (e.g. 24h). The aim would be to efficiently store the data coming from processing, so as not to delay the processing to be carried out on the stream, and then to transfer it to the datalake (HDFS) without any major time constraints.
 
 ### What business constraint should the architecture meet to fulfill the requirement describe in the paragraph "Alert"? Which component to choose?
     
