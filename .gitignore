@@ -1,0 +1,10 @@
+.metals/*
+.vscode/*
+target/*
+skyguards/.idea/*
+skyguards/.bsp/*
+skyguards/project/target/*
+skyguards/target/bg-jobs/*
+skyguards/project/project/
+skyguards/target/*
+spark-streaming/

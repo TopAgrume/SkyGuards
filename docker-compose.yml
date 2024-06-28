@@ -1,7 +1,6 @@
-version: '3'
 services:
 
-  skyguards:
+  skyguards-service:
     build:
       context: ./skyguards
     depends_on:
@@ -17,8 +16,11 @@ services:
   #########
 
   kafka-zookeeper-1:
-    image: confluentinc/cp-zookeeper:7.6.1 
+    image: confluentinc/cp-zookeeper:7.6.1
+    user: root
+    restart: on-failure
     environment:
+      ZOOKEEPER_SERVER_ID: 1
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
     ports:
@@ -26,6 +28,7 @@ services:
 
   kafka-broker-1:
     image: confluentinc/cp-kafka:7.6.1
+    restart: on-failure
     hostname: kafka-broker-1
     ports:
       - "9092:9092"
@@ -40,25 +43,117 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       TOPIC_AUTO_CREATE: false
-      KAFKA_CREATE_TOPICS: "reports:1:1"
 
-
-  init-kafka-1:
+  init-kafka-topic-1:
     image: confluentinc/cp-kafka:7.6.1
+    volumes:
+      - ./script:/script/
+    environment:
+      KAFKA_BROKER: "kafka-broker-1:29092"
     depends_on:
       - kafka-broker-1
-    restart: "no"
     entrypoint: ["/bin/sh", "-c"]
-    command: |
-      "
-      echo 'Waiting for kafka-broker-1'
-      sleep 2
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --list
+    command: [ 'sh /script/setup-kafka.sh' ]
 
-      echo 'Creating kafka topics...'
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists --topic reports --replication-factor 1 --partitions 1
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists --topic alerts --replication-factor 1 --partitions 1
+  #########
+  # SPARK #
+  #########
 
-      echo 'Setup done. Following topics created:'
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --list
-      "
+  # Made with the help of:
+  # https://dev.to/mvillarrealb/creating-a-spark-standalone-cluster-with-docker-and-docker-compose-2021-update-6l4
+
+  spark-master:
+    user: root
+    hostname: spark_master
+    build:
+      context: ./spark-streaming
+    environment:
+      - SPARK_MODE=master
+      - SPARK_LOCAL_IP=spark-master
+      #- SPARK_RPC_AUTHENTICATION_ENABLED=no
+      #- SPARK_RPC_ENCRYPTION_ENABLED=no
+      #- SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      #- SPARK_SSL_ENABLED=no
+    volumes:
+       - ./spark/apps:/opt/spark-apps
+       - ./spark/data:/opt/spark-data
+    ports:
+      - "9090:8080"
+      - "7077:7077"
+
+  spark-worker-a:
+    build:
+      context: ./spark-streaming
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a
+    depends_on:
+      - spark-master
+    ports:
+      - "9991:8080"
+      - "7000:7000"
+
+  spark-worker-b:
+    build:
+      context: ./spark-streaming
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-b
+    depends_on:
+      - spark-master
+    ports:
+      - "9992:8080"
+      - "7001:7000"
+
+  #spark-streaming:
+  #  build:
+  #    context: ./spark-streaming
+  #  depends_on:
+  #    - kafka-broker-1
+  #    - spark-master
+  #    - spark-worker-1
+  #    - spark-worker-2
+  #  environment:
+  #    - KAFKA_BOOTSTRAP_SERVERS=kafka-broker-1:9092
+
+  #############
+  # S3 Bucket #
+  #############
+
+  ##############
+  # SLOW START #
+  ##############
+
+  kafka:
+    image: tianon/true
+    depends_on:
+      - kafka-broker-1
+      - init-kafka-topic-1
+    restart: "no"
+
+  skyguards:
+    image: tianon/true
+    depends_on:
+      - skyguards-service
+    restart: "no"
+
+  spark:
+    image: tianon/true
+    depends_on:
+      - spark-master
+      - spark-worker-a
+      - spark-worker-b
+  #    - spark-streaming
+    restart: "no"
