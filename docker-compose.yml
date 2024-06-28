@@ -1,0 +1,42 @@
+version: '3'
+services:
+
+  skyguards:
+    build:
+      context: ./skyguards
+    depends_on:
+      - broker
+    environment:
+      PL_KAFKA_HOST: kafka:9092
+      PL_REPORT_TOPIC: reports
+      PL_NB_PEACEWATCHER: 5
+    deploy:
+      replicas: 1
+
+  #########
+  # KAFKA #
+  #########
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"
+    expose:
+      - "29092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "reports:1:1"
