@@ -5,11 +5,10 @@ services:
     build:
       context: ./skyguards
     depends_on:
-      - broker
+      - kafka-broker-1
     environment:
-      PL_KAFKA_HOST: kafka:9092
+      PL_KAFKA_HOST: kafka-broker-1:9092
       PL_REPORT_TOPIC: reports
-      PL_NB_PEACEWATCHER: 5
     deploy:
       replicas: 1
 
@@ -17,26 +16,49 @@ services:
   # KAFKA #
   #########
 
-  zookeeper:
-    image: confluentinc/cp-zookeeper:latest
-    ports:
-      - "2181:2181"
+  kafka-zookeeper-1:
+    image: confluentinc/cp-zookeeper:7.6.1 
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
 
-  broker:
-    image: confluentinc/cp-kafka:latest
+  kafka-broker-1:
+    image: confluentinc/cp-kafka:7.6.1
+    hostname: kafka-broker-1
     ports:
       - "9092:9092"
     expose:
       - "29092"
     depends_on:
-      - zookeeper
+      - kafka-zookeeper-1
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ZOOKEEPER_CONNECT: "kafka-zookeeper-1:2181"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka-broker-1:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      TOPIC_AUTO_CREATE: false
       KAFKA_CREATE_TOPICS: "reports:1:1"
+
+
+  init-kafka-1:
+    image: confluentinc/cp-kafka:7.6.1
+    depends_on:
+      - kafka-broker-1
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      echo 'Waiting for kafka-broker-1'
+      sleep 2
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --list
+
+      echo 'Creating kafka topics...'
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists --topic reports --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists --topic alerts --replication-factor 1 --partitions 1
+
+      echo 'Setup done. Following topics created:'
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --list
+      "
