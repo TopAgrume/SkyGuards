@@ -3,7 +3,5 @@
 target/*
 skyguards/.idea/*
 skyguards/.bsp/*
-skyguards/project/target/*
-skyguards/target/bg-jobs/*
 skyguards/target/*
 skyguards/project/*

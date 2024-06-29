@@ -1,15 +1,18 @@
 services:
 
-  skyguards-service:
-    build:
-      context: ./skyguards
-    depends_on:
-      - kafka-broker-1
-    environment:
-      PL_KAFKA_HOST: kafka-broker-1:9092
-      PL_REPORT_TOPIC: reports
-    deploy:
-      replicas: 1
+  #skyguards-service:
+  #  build:
+  #    context: ./skyguards
+  #  depends_on:
+  #    - kafka-broker-1
+  #  environment:
+  #    KAFKA_HOST: kafka-broker-1:9092
+  #    REPORT_TOPIC: reports
+  #    SCENARIO: 1
+  #    NB_DRONE: 5
+  #  deploy:
+  #    replicas: 1
+  #  command: ["sbt", "run"]
 
   #########
   # KAFKA #
@@ -31,15 +34,13 @@ services:
     restart: on-failure
     hostname: kafka-broker-1
     ports:
-      - "9092:9092"
-    expose:
-      - "29092"
+      - "29092:29092"
     depends_on:
       - kafka-zookeeper-1
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: "kafka-zookeeper-1:2181"
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka-broker-1:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:9092,PLAINTEXT_INTERNAL://localhost:29092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       TOPIC_AUTO_CREATE: false
@@ -49,7 +50,7 @@ services:
     volumes:
       - ./script:/script/
     environment:
-      KAFKA_BROKER: "kafka-broker-1:29092"
+      KAFKA_BROKER: "kafka-broker-1:9092"
     depends_on:
       - kafka-broker-1
     entrypoint: ["/bin/sh", "-c"]
@@ -65,32 +66,27 @@ services:
   spark-master:
     user: root
     hostname: spark_master
-    build:
-      context: ./spark-streaming
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     environment:
       - SPARK_MODE=master
       - SPARK_LOCAL_IP=spark-master
-      #- SPARK_RPC_AUTHENTICATION_ENABLED=no
-      #- SPARK_RPC_ENCRYPTION_ENABLED=no
-      #- SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
-      #- SPARK_SSL_ENABLED=no
-    volumes:
-       - ./spark/apps:/opt/spark-apps
-       - ./spark/data:/opt/spark-data
+    depends_on:
+      - kafka-broker-1
     ports:
       - "9090:8080"
       - "7077:7077"
 
   spark-worker-a:
-    build:
-      context: ./spark-streaming
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_DRIVER_MEMORY=1G
-      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKER_MEMORY=256M
+      - SPARK_DRIVER_MEMORY=256M
+      - SPARK_EXECUTOR_MEMORY=256M
       - SPARK_WORKLOAD=worker
       - SPARK_LOCAL_IP=spark-worker-a
     depends_on:
@@ -100,15 +96,15 @@ services:
       - "7000:7000"
 
   spark-worker-b:
-    build:
-      context: ./spark-streaming
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     environment:
       - SPARK_MODE=worker
       - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=1G
-      - SPARK_DRIVER_MEMORY=1G
-      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKER_MEMORY=256M
+      - SPARK_DRIVER_MEMORY=256M
+      - SPARK_EXECUTOR_MEMORY=256M
       - SPARK_WORKLOAD=worker
       - SPARK_LOCAL_IP=spark-worker-b
     depends_on:
@@ -116,17 +112,6 @@ services:
     ports:
       - "9992:8080"
       - "7001:7000"
-
-  #spark-streaming:
-  #  build:
-  #    context: ./spark-streaming
-  #  depends_on:
-  #    - kafka-broker-1
-  #    - spark-master
-  #    - spark-worker-1
-  #    - spark-worker-2
-  #  environment:
-  #    - KAFKA_BOOTSTRAP_SERVERS=kafka-broker-1:9092
 
   #############
   # S3 Bucket #
@@ -143,11 +128,11 @@ services:
       - init-kafka-topic-1
     restart: "no"
 
-  skyguards:
-    image: tianon/true
-    depends_on:
-      - skyguards-service
-    restart: "no"
+  #skyguards:
+  #  image: tianon/true
+  #  depends_on:
+  #    - skyguards-service
+  #  restart: "no"
 
   spark:
     image: tianon/true
