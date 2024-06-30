@@ -1,17 +1,19 @@
 version: '3.8'
 services:
 
-#  skyguards:
-#    build:
-#      context: ./skyguards
-#    depends_on:
-#      - broker
-#    environment:
-#      PL_KAFKA_HOST: kafka:9092
-#      PL_REPORT_TOPIC: reports
-#      PL_NB_PEACEWATCHER: 5
-#    deploy:
-#      replicas: 1
+  #skyguards-service:
+  #  build:
+  #    context: ./skyguards
+  #  depends_on:
+  #    - kafka-broker-1
+  #  environment:
+  #    KAFKA_HOST: kafka-broker-1:9092
+  #    REPORT_TOPIC: reports
+  #    SCENARIO: 1
+  #    NB_DRONE: 5
+  #  deploy:
+  #    replicas: 1
+  #  command: ["sbt", "run"]
 
   #########
   # KAFKA #
@@ -126,9 +128,9 @@ services:
     env_file:
       - ./hadoop.env
 
-  #########
-  # SPARK #
-  #########
+  ##############
+  # SPARK HDFS #
+  ##############
 
   spark-master-hdfs:
     image: bde2020/spark-master:3.0.0-hadoop3.2
@@ -154,9 +156,16 @@ services:
       - "SPARK_MASTER=spark://spark-master-hdfs:7077"
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
 
+  #########
+  # SPARK #
+  #########
+
+  # Made with the help of:
+  # https://dev.to/mvillarrealb/creating-a-spark-standalone-cluster-with-docker-and-docker-compose-2021-update-6l4
+
   spark-master:
     user: root
-    hostname: spark-master
+    hostname: spark_master
     image: spark:3.5.1-scala2.12-java11-ubuntu
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     environment:
@@ -165,7 +174,7 @@ services:
     depends_on:
       - kafka-broker-1
     ports:
-      - "8082:8080"
+      - "9090:8080"
       - "7087:7077"
 
   spark-worker-a:
@@ -204,6 +213,10 @@ services:
       - "9992:8080"
       - "7001:7000"
 
+  #############
+  # S3 Bucket #
+  #############
+
   ##############
   # SLOW START #
   ##############
@@ -214,6 +227,12 @@ services:
       - kafka-broker-1
       - init-kafka-topic-1
     restart: "no"
+
+  #skyguards:
+  #  image: tianon/true
+  #  depends_on:
+  #    - skyguards-service
+  #  restart: "no"
 
   spark:
     image: tianon/true

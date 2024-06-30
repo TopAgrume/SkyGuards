@@ -1,0 +1,7 @@
+.metals/*
+.vscode/*
+target/*
+skyguards/.idea/*
+skyguards/.bsp/*
+skyguards/target/*
+skyguards/project/*

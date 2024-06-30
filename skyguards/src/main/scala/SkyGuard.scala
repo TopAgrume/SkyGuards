@@ -12,6 +12,7 @@ class SkyGuard(id: Int, scenario: Int, properties: Properties) extends Runnable{
     producer.send(record)
     producer.flush()
     send(producer)
+    println("Drone -> Sending message")
   }
 
   def run() : Unit = {
