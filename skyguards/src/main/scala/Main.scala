@@ -5,26 +5,18 @@ import org.apache.kafka.common.serialization.StringSerializer
 import java.util.Properties
 
 object Main extends App {
-  val consumerTest = new ConsumerTest()
-  val producerTest = new ProducerTest()
 
-  consumerTest.subscribe(List("reports"))
+  val scenario = scala.util.Properties.envOrElse("SCENARIO", "1").toInt
+  val nbdrone = scala.util.Properties.envOrElse("NB_DRONE", "5").toInt
 
-  Thread.sleep(4000)
-  println("Pushing new message")
+  val props: Properties = new Properties()
+  props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092")
+  props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName)
+  props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName)
 
-  producerTest.pushMessages("127", "zizou")
-  producerTest.pushMessages("128", "fifou")
-  producerTest.pushMessages("129", "lilou")
-  producerTest.pushMessages("139", "mimou")
+  List.range(0, nbdrone)
+    .map(id => new Thread(new SkyGuard(id, scenario, props)))
+    .foreach(t => t.start())
 
-
-  for (_ <- 1 to 3) {
-    consumerTest.pullMessages()
-    Thread.sleep(2000)
-    println("pulling messages")
-  }
-
-  consumerTest.closeConsumer()
-  producerTest.closeProducer()
+  Thread.sleep(1000 * 5)
 }
