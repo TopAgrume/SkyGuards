@@ -176,7 +176,8 @@ services:
   ########
 
   hdfs:
-    image: alpine:3.20.1
+    build:
+      context: ./hdfs
     depends_on:
       - namenode
       - datanode
@@ -315,6 +316,7 @@ services:
       - spark-master-hdfs
       - spark-worker-hdfs-1
       - spark-worker-hdfs-2
+      - kafka
     restart: "no"
 
   alert-consumers:
