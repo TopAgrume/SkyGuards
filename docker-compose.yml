@@ -184,6 +184,11 @@ services:
       - resourcemanager
       - nodemanager1
       - historyserver
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://resourcemanager:8088 || exit 1"]
+      interval: 4s
+      timeout: 4s
+      retries: 10
 
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
@@ -325,6 +330,15 @@ services:
       - discord_bot
       - telegram_bot
     restart: "no"
+
+  analysis:
+    build:
+      context: ./analysis
+    depends_on:
+      - spark-master-hdfs
+      - hdfs
+    restart: "no"
+
 networks:
   spark-network:
     driver: bridge
