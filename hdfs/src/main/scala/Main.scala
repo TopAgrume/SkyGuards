@@ -15,7 +15,7 @@ object Main {
 
     val kafkaDF = spark.read
       .format("kafka")
-      .option("kafka.bootstrap.servers", "localhost:29092")
+      .option("kafka.bootstrap.servers", "kafka-broker-1:9092")
       .option("subscribe", "reports")
       .option("startingOffsets", "earliest")
       .load()
@@ -42,7 +42,7 @@ object Main {
     println(messagesDF.show())
     println(s"Number of records: ${messagesDF.count()}")
 
-    val hdfsPath = s"hdfs://localhost:9000/user/hdfs/reports/"
+    val hdfsPath = s"hdfs://namenode:9000/user/hdfs/reports/"
 
     messagesDF.write
       .mode("append")
