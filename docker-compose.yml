@@ -1,8 +1,8 @@
 services:
 
-  ##########
-  # DRONES #
-  ##########
+  #############
+  # SERVICES  #
+  #############
 
   #skyguards-service:
   #  build:
@@ -17,6 +17,18 @@ services:
   #  deploy:
   #    replicas: 1
   #  command: ["sbt", "run"]
+
+  skyguards-spark-alerts:
+    build: ./spark-streaming
+    depends_on:
+      init-kafka-topic-1:
+        condition: service_healthy
+      spark-master:
+        condition: service_started
+    networks:
+      - spark-network
+      - default
+
 
   #########
   # KAFKA #
@@ -59,6 +71,11 @@ services:
       - kafka-broker-1
     entrypoint: ["/bin/sh", "-c"]
     command: [ 'sh /script/setup-kafka.sh' ]
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka-broker-1:9092 --list | grep -q 'reports' && kafka-topics --bootstrap-server kafka-broker-1:9092 --list | grep -q 'alerts'"]
+      interval: 4s
+      timeout: 4s
+      retries: 10
 
   ###################
   # SPARK STREAMING #
@@ -66,8 +83,8 @@ services:
 
   spark-master:
     user: root
-    hostname: spark_master
-    image: spark:3.5.1-scala2.12-java11-ubuntu
+    #hostname: spark-master
+    image: apache/spark:3.5.1-scala2.12-java11-python3-r-ubuntu
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     environment:
       - SPARK_MODE=master
@@ -77,9 +94,11 @@ services:
     ports:
       - "9090:8080"
       - "7087:7077"
+    networks:
+      - spark-network
 
   spark-worker-a:
-    image: spark:3.5.1-scala2.12-java11-ubuntu
+    image: apache/spark:3.5.1-scala2.12-java11-python3-r-ubuntu
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     environment:
       - SPARK_MODE=worker
@@ -95,9 +114,11 @@ services:
     ports:
       - "9991:8080"
       - "7000:7000"
+    networks:
+      - spark-network
 
   spark-worker-b:
-    image: spark:3.5.1-scala2.12-java11-ubuntu
+    image: apache/spark:3.5.1-scala2.12-java11-python3-r-ubuntu
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
     environment:
       - SPARK_MODE=worker
@@ -113,6 +134,8 @@ services:
     ports:
       - "9992:8080"
       - "7001:7000"
+    networks:
+      - spark-network
 
   ############
   # ON ALERT #
@@ -300,6 +323,9 @@ services:
       - discord_bot
       - telegram_bot
     restart: "no"
+networks:
+  spark-network:
+    driver: bridge
 
 volumes:
   hadoop_namenode:
