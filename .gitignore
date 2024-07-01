@@ -5,3 +5,4 @@ skyguards/.idea/*
 skyguards/.bsp/*
 skyguards/target/*
 skyguards/project/*
+website/node_modules

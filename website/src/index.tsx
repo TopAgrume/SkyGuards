@@ -56,15 +56,27 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
     public componentDidMount() {
         const data = `
-            DroneID,Lat,Lon,Population,Battery,Speed
-            Drone1,48.8566,2.3522,19354922,10,29
-            Drone2,48.8570,2.3540,12815475,20,30
-            Drone3,48.8580,2.3550,8675982,30,31
-            Drone4,48.8590,2.3560,6381966,40,32
-            Drone5,48.8600,2.3570,5733259,50,33
-            Drone6,48.8610,2.3580,5637884,60,34
-            Drone7,48.8620,2.3590,5446468,70,35
-            `.trim();
+            DroneID,Lat,Lon,PopulationDensity,Speed,Battery
+            Drone1,48.8566,2.3522,0.1,10,29
+            Drone2,48.8570,2.3540,0.19,20,30
+            Drone3,48.8580,2.3550,0.18,30,31
+            Drone4,48.8590,2.3560,0.17,40,32
+            Drone5,48.8600,2.3570,0.16,50,33
+            Drone6,48.8610,2.3580,0.15,60,34
+            Drone7,48.8620,2.3590,0.14,70,35
+            Drone8,48.8647,2.3490,0.20,15,50
+            Drone9,48.8670,2.3318,0.18,18,55
+            Drone10,48.8700,2.3294,0.17,12,53
+            Drone11,48.8738,2.2950,0.18,20,60
+            Drone12,48.8584,2.2945,0.16,22,45
+            Drone13,48.8606,2.3376,0.15,25,48
+            Drone14,48.8529,2.3470,0.14,28,49
+            Drone15,48.8614,2.3447,0.14,30,52
+            Drone16,48.8668,2.3350,0.15,35,47
+            Drone17,48.8721,2.3430,0.14,40,46
+            Drone18,48.8757,2.3456,0.13,45,44
+            Drone19,48.8512,2.3696,0.13,50,42
+            Drone20,48.8358,2.3621,1,55,41`.trim();
 
         this.onDataLoaded(data)
     }
@@ -97,7 +109,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
         gen.xValues = longitudes;
         gen.yValues = latitudes;
         gen.values = populations;
-        gen.blurRadius = 6;
+        gen.blurRadius = 10;
         gen.maxBlurRadius = 20;
         gen.useBlurRadiusAdjustedForZoom = true;
         gen.minimumColor = "rgba(100, 255, 0, 0.5)";
@@ -131,7 +143,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
         geoSeries.heatMinimumColor = "rgba(0, 0, 0, 0)";
         geoSeries.heatMinimum = 0;
         geoSeries.heatMaximum = 5;
-        geoSeries.pointExtent = 1;
+        geoSeries.pointExtent = 2;
         geoSeries.tooltipTemplate = this.createTooltip;
         geoSeries.mouseOverEnabled = true;
 
@@ -146,8 +158,6 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
         const dataItem = dataContext.item as any;
         if (!dataItem) return null;
-
-        console.log(dataItem)
 
         const latitude = WorldUtils.toStringLat(dataItem.latitude);
         const longitude = WorldUtils.toStringLon(dataItem.longitude);
