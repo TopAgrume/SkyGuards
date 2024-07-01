@@ -1,5 +1,6 @@
 .metals/*
 .vscode/*
+.venv/*
 target/*
 skyguards/.idea/*
 skyguards/.bsp/*

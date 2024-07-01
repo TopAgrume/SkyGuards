@@ -1,5 +1,8 @@
-version: '3.8'
 services:
+
+  ##########
+  # DRONES #
+  ##########
 
   #skyguards-service:
   #  build:
@@ -57,9 +60,97 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: [ 'sh /script/setup-kafka.sh' ]
 
-  #########
+  ###################
+  # SPARK STREAMING #
+  ###################
+
+  spark-master:
+    user: root
+    hostname: spark_master
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_LOCAL_IP=spark-master
+    depends_on:
+      - kafka-broker-1
+    ports:
+      - "9090:8080"
+      - "7087:7077"
+
+  spark-worker-a:
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=256M
+      - SPARK_DRIVER_MEMORY=256M
+      - SPARK_EXECUTOR_MEMORY=256M
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a
+    depends_on:
+      - spark-master
+    ports:
+      - "9991:8080"
+      - "7000:7000"
+
+  spark-worker-b:
+    image: spark:3.5.1-scala2.12-java11-ubuntu
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=256M
+      - SPARK_DRIVER_MEMORY=256M
+      - SPARK_EXECUTOR_MEMORY=256M
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-b
+    depends_on:
+      - spark-master
+    ports:
+      - "9992:8080"
+      - "7001:7000"
+
+  ############
+  # ON ALERT #
+  ############
+
+  discord_bot:
+    build: ./alert_consumers/discord
+    command: python discord_bot.py
+    depends_on:
+      - init-kafka-topic-1
+    volumes:
+      - ./alert_consumers/discord:/app
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}
+      - CHANNEL_ID=${CHANNEL_ID}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_DISCORD_GROUP=${KAFKA_DISCORD_GROUP}
+    env_file:
+      - .env
+
+  telegram_bot:
+    build: ./alert_consumers/telegram
+    command: python telegram_bot.py
+    depends_on:
+      - init-kafka-topic-1
+    volumes:
+      - ./alert_consumers/telegram:/app
+    environment:
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN}
+      - CHAT_ID=${CHAT_ID}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS}
+      - KAFKA_TELEGRAM_GROUP=${KAFKA_TELEGRAM_GROUP}
+    env_file:
+      - .env
+
+  ########
   # HDFS #
-  #########
+  ########
 
   hdfs:
     image: alpine:3.20.1
@@ -167,70 +258,18 @@ services:
       - "SPARK_MASTER=spark://spark-master-hdfs:7077"
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
 
-  #########
-  # SPARK #
-  #########
-
-  # Made with the help of:
-  # https://dev.to/mvillarrealb/creating-a-spark-standalone-cluster-with-docker-and-docker-compose-2021-update-6l4
-
-  spark-master:
-    user: root
-    hostname: spark_master
-    image: spark:3.5.1-scala2.12-java11-ubuntu
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
-    environment:
-      - SPARK_MODE=master
-      - SPARK_LOCAL_IP=spark-master
-    depends_on:
-      - kafka-broker-1
-    ports:
-      - "9090:8080"
-      - "7087:7077"
-
-  spark-worker-a:
-    image: spark:3.5.1-scala2.12-java11-ubuntu
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=256M
-      - SPARK_DRIVER_MEMORY=256M
-      - SPARK_EXECUTOR_MEMORY=256M
-      - SPARK_WORKLOAD=worker
-      - SPARK_LOCAL_IP=spark-worker-a
-    depends_on:
-      - spark-master
-    ports:
-      - "9991:8080"
-      - "7000:7000"
-
-  spark-worker-b:
-    image: spark:3.5.1-scala2.12-java11-ubuntu
-    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
-    environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
-      - SPARK_WORKER_CORES=1
-      - SPARK_WORKER_MEMORY=256M
-      - SPARK_DRIVER_MEMORY=256M
-      - SPARK_EXECUTOR_MEMORY=256M
-      - SPARK_WORKLOAD=worker
-      - SPARK_LOCAL_IP=spark-worker-b
-    depends_on:
-      - spark-master
-    ports:
-      - "9992:8080"
-      - "7001:7000"
-
-  #############
-  # S3 Bucket #
-  #############
-
   ##############
   # SLOW START #
   ##############
+
+  # Here we use tianon/true image:
+  # This image essentially does nothing and exits immediately, which is useful for dependency management.
+
+  #skyguards:
+  #  image: tianon/true
+  #  depends_on:
+  #    - skyguards-service
+  #  restart: "no"
 
   kafka:
     image: tianon/true
@@ -239,18 +278,27 @@ services:
       - init-kafka-topic-1
     restart: "no"
 
-  #skyguards:
-  #  image: tianon/true
-  #  depends_on:
-  #    - skyguards-service
-  #  restart: "no"
-
   spark:
     image: tianon/true
     depends_on:
       - spark-master
       - spark-worker-a
       - spark-worker-b
+    restart: "no"
+
+  spark-hdfs:
+    image: tianon/true
+    depends_on:
+      - spark-master-hdfs
+      - spark-worker-hdfs-1
+      - spark-worker-hdfs-2
+    restart: "no"
+
+  alert-consumers:
+    image: tianon/true
+    depends_on:
+      - discord_bot
+      - telegram_bot
     restart: "no"
 
 volumes:
