@@ -8,8 +8,5 @@ lazy val root = (project in file("."))
     version := "0.1",
     libraryDependencies += "org.apache.kafka" %% "kafka" % "2.6.0",
     libraryDependencies += "org.json4s" %% "json4s-jackson" % "3.7.0-M11",
-    libraryDependencies += "joda-time" % "joda-time" % "2.10.13",
-    libraryDependencies += "org.apache.spark" %% "spark-core" % "3.5.1",
-    libraryDependencies += "org.apache.spark" %% "spark-sql" % "3.5.1",
-    libraryDependencies += "org.apache.spark" %% "spark-sql-kafka-0-10" % "3.5.1",
+    libraryDependencies += "joda-time" % "joda-time" % "2.10.13"
   )

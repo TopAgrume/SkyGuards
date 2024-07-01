@@ -11,3 +11,5 @@ kafka-topics --bootstrap-server ${KAFKA_BROKER} --create --if-not-exists --topic
 
 echo 'Setup done. Following topics created:'
 kafka-topics --bootstrap-server ${KAFKA_BROKER} --list
+
+tail -f /dev/null
