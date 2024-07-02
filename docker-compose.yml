@@ -9,6 +9,8 @@ services:
       context: ./skyguards
     depends_on:
       - kafka-broker-1
+      - kafka-broker-2
+      - kafka-broker-3
     environment:
       KAFKA_HOST: kafka-broker-1:9092
       REPORT_TOPIC: reports
@@ -318,6 +320,8 @@ services:
     image: tianon/true
     depends_on:
       - kafka-broker-1
+      - kafka-broker-2
+      - kafka-broker-3
       - init-kafka-topic-1
     restart: "no"
 
