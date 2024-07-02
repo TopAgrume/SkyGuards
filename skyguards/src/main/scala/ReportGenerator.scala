@@ -63,7 +63,7 @@
 
     def generatePeople(scenario: Int, surface: Int): Int = {
 
-      val max_people : Int = 3000
+      val max_people : Int = surface * 10
 
       scenario match {
         case 1 =>
