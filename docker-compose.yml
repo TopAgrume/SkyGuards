@@ -104,9 +104,11 @@ services:
     volumes:
       - ./script:/script/
     environment:
-      KAFKA_BROKER: "kafka-broker-1:9092"
+      KAFKA_BROKER: "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092"
     depends_on:
       - kafka-broker-1
+      - kafka-broker-2
+      - kafka-broker-3
     entrypoint: ["/bin/sh", "-c"]
     command: [ 'sh /script/setup-kafka.sh' ]
     healthcheck:
