@@ -15,7 +15,11 @@ final case class Report(
                        )
 
 object Main {
-  val hdfs_master = "hdfs://localhost:9000/"
+
+  println("Waiting to ensure HDFS is fully ready..")
+  Thread.sleep(1000 * 30)
+
+  val hdfs_master = "hdfs://namenode:9000/"
   val spark = SparkSession.builder
     .appName("Analysis")
     .master("local")
