@@ -120,7 +120,16 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
                         height="100%"
                         zoomable={true} />
                 </div>
-                <div className="overlay-bottom-right overlay-border">Imagery Tiles: @OpenStreetMap</div>
+                <div className="overlay-bottom-right overlay-border">
+                    <div>
+                        @OpenStreetMap
+                    </div>
+                    <div>
+                        <a href="http://localhost:3000/d/rDBw9rQIk/v1?orgId=1&from=now-3h&to=now" target="_blank" rel="noopener noreferrer">
+                            Grafana Dashboard
+                        </a>
+                    </div>
+                </div>
             </div>
         );
     }
@@ -280,7 +289,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
         const time = d[1].replace("Z", "")
 
         return <div className="tooltipBox">
-            < div className="tooltipTitle" > {id}</div >
+            < div className="tooltipTitle" > {Number(id) + 1}</div >
             <div>
                 <div className="tooltipRow">
                     <div className="tooltipLbl">Date:</div>
