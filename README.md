@@ -24,6 +24,7 @@ SkyGuard is a project aimed at preventing mass casualties in crowded spaces. By 
 42sh$ docker-compose up all         
 42sh$ docker-compose up skyguards   // generate reports
 42sh$ docker-compose up analysis    // Run the hdfs service and generate analysis
+42sh$ ./start_website.sh            // Start website
 ```
 
 # Project Architecture

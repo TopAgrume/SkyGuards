@@ -81,7 +81,7 @@ object InfluxDBService {
         batchDF.collect().foreach { row =>
           val id = row.getAs[Int]("id")
           val timestampStr = row.getAs[String]("timestamp")
-          val localDateTime = LocalDateTime.parse(timestampStr, inputDateFormatter).minusHours(2)
+          val localDateTime = LocalDateTime.parse(timestampStr, inputDateFormatter)
           // Ensure the timestamp has zero milliseconds
           val formattedTimestamp = localDateTime.withNano(0).toInstant(ZoneOffset.UTC)
 
