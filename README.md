@@ -8,7 +8,7 @@ SkyGuard is a project aimed at preventing mass casualties in crowded spaces. By 
 
 1. **Report Generation and Kafka Streaming**
    - **Skyguards (Drones):** Generate reports stored in `./skyguards`.
-   - **Kafka Stream:** These reports are sent to a Kafka stream for real-time processing.
+   - **Kafka Stream:** These reports are sent to a Kafka stream for real-time processing. The Kafka setup is designed to be resilient, with multiple brokers / partitions / duplicatas ensuring data durability / safety.
 
 2. **Spark Processing**
    - **Spark Streaming (./spark-streaming):** Consumes reports from the Kafka stream.
@@ -29,6 +29,15 @@ SkyGuard is a project aimed at preventing mass casualties in crowded spaces. By 
 
 # Project Architecture
 ![image_archi](https://github.com/TopAgrume/SkyGuards/blob/main/SkyGuards_Architecture.png)
+
+# Alerts Telegram & Discord
+
+![image_discord](https://cdn.discordapp.com/attachments/1218983554244022314/1257812079398752297/image.png?ex=6685c448&is=668472c8&hm=a36290600b2f5bdfef78c794e5126a6a33ded6f7270a305d362fa2ea565348a4&)\
+![image_telegram](https://cdn.discordapp.com/attachments/1218983554244022314/1257812326300516412/image.png?ex=6685c483&is=66847303&hm=7bb84f5eaf15b1ed05592a5dde93e3269f41a130a780f4f758e18ee3699547f5&)
+
+# Website
+
+![image_website](https://cdn.discordapp.com/attachments/1218983554244022314/1257814563919757442/image.png?ex=6685c699&is=66847519&hm=defc00a413f9f5d0e81ca78336ede57a0138594044b5958a8984fc35295b69a9&)
 
 # Authors
 alexandre.devaux-riviere\
