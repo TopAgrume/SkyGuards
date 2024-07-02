@@ -42,7 +42,7 @@ object Main {
     val density_df = parsed_df.withColumn("density", col("nbPeople") / col("surface"))
 
     // Filter rows where density exceeds the threshold
-    val threshold = 1
+    val threshold = 7
     val alert_df = density_df.filter(col("density") > threshold)
 
     // Convert the alert messages back to JSON

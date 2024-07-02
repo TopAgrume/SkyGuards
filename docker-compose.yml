@@ -4,19 +4,19 @@ services:
   # SERVICES  #
   #############
 
-  #skyguards-service:
-  #  build:
-  #    context: ./skyguards
-  #  depends_on:
-  #    - kafka-broker-1
-  #  environment:
-  #    KAFKA_HOST: kafka-broker-1:9092
-  #    REPORT_TOPIC: reports
-  #    SCENARIO: 1
-  #    NB_DRONE: 5
-  #  deploy:
-  #    replicas: 1
-  #  command: ["sbt", "run"]
+  skyguards:
+    build:
+      context: ./skyguards
+    depends_on:
+      - kafka-broker-1
+    environment:
+      KAFKA_HOST: kafka-broker-1:9092
+      REPORT_TOPIC: reports
+      SCENARIO: 1
+      NB_DRONE: 5
+    deploy:
+      replicas: 1
+    command: ["sbt", "run"]
 
   skyguards-spark-alerts:
     build: ./spark-streaming
@@ -145,7 +145,8 @@ services:
     build: ./alert_consumers/discord
     command: python discord_bot.py
     depends_on:
-      - init-kafka-topic-1
+      init-kafka-topic-1:
+        condition: service_healthy
     volumes:
       - ./alert_consumers/discord:/app
     environment:
@@ -160,7 +161,8 @@ services:
     build: ./alert_consumers/telegram
     command: python telegram_bot.py
     depends_on:
-      - init-kafka-topic-1
+      init-kafka-topic-1:
+        condition: service_healthy
     volumes:
       - ./alert_consumers/telegram:/app
     environment:
@@ -373,6 +375,22 @@ services:
       DOCKER_INFLUXDB_INIT_BUCKET: "website"
       DOCKER_INFLUXDB_INIT_PORT: 8086
       DOCKER_INFLUXDB_INIT_HOST: "influxdb"
+
+  all:
+    image: tianon/true
+    depends_on:
+      - kafka
+      - spark
+      - spark-hdfs
+      - namenode
+      - datanode
+      - resourcemanager
+      - nodemanager1
+      - historyserver
+      - alert-consumers
+      - skyguards-spark-alerts
+      - influx
+    restart: "no"
 
 networks:
   spark-network:
