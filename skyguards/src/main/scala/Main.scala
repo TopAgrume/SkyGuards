@@ -11,7 +11,7 @@ object Main extends App {
   val nbdrone = scala.util.Properties.envOrElse("NB_DRONE", "5").toInt
 
   val props: Properties = new Properties()
-  props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29092")
+  props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:29093")
   props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName)
   props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, classOf[StringSerializer].getName)
 
