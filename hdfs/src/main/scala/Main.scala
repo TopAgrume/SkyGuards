@@ -38,8 +38,9 @@ object Main {
       .select(from_json(col("json"), jsonSchema).as("data"))
       .select("data.*")
 
+    messagesDF.show()
     messagesDF.printSchema()
-    println(messagesDF.show())
+    //println(messagesDF.show())
     println(s"Number of records: ${messagesDF.count()}")
 
     val hdfsPath = s"hdfs://namenode:9000/user/hdfs/reports/"
