@@ -312,7 +312,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
                     <div className="tooltipVal">{nbPeople}</div>
                 </div>
                 <div className="tooltipRow">
-                    <div className="tooltipLbl">Densite:</div>
+                    <div className="tooltipLbl">Density:</div>
                     <div className="tooltipVal">{density.toFixed(2)}</div>
                 </div>
             </div>

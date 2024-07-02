@@ -75,7 +75,6 @@ object InfluxDBService {
     val writeApi = client.getWriteScalaApi
 
     // Process each row and write to InfluxDB
-    // Process each row and write to InfluxDB
     messagesDF.writeStream
       .foreachBatch((batchDF: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row], batchId: Long) => {
         batchDF.collect().foreach { row =>
@@ -111,21 +110,5 @@ object InfluxDBService {
     spark.stop()
     client.close()
     system.terminate()
-  }
-
-  @Measurement(name = "drone")
-  class Drone() {
-    @Column(tag = true)
-    var id: Int = _
-    @Column
-    var lon: Double = _
-    @Column
-    var lat: Double = _
-    @Column
-    var nbPeople: Int = _
-    @Column
-    var density: Int = _
-    @Column(timestamp = true)
-    var timestamp: Instant = _
   }
 }
