@@ -24,6 +24,7 @@ interface DroneData {
     longitude: number;
     nbPeople: number;
     density: number;
+    time: Date;
 }
 
 const parseValue = (val: string, type: string): number | string | Date => {
@@ -186,6 +187,8 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
                     droneMap[droneId] = { id: droneId };
                 }
 
+                droneMap[droneId].time = row._time;
+
                 switch (row._field) {
                     case 'lat':
                         latitudes.push(Number(row._value));
@@ -248,7 +251,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
         geoSeries.heatMaximumColor = "rgba(0, 0, 0, 0)";
         geoSeries.heatMinimumColor = "rgba(0, 0, 0, 0)";
         geoSeries.heatMinimum = 0;
-        geoSeries.heatMaximum = 5;
+        geoSeries.heatMaximum = 20;
         geoSeries.pointExtent = 2;
         geoSeries.tooltipTemplate = this.createTooltip;
         geoSeries.mouseOverEnabled = true;
@@ -271,10 +274,22 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
         const id = dataItem.id;
         const nbPeople = dataItem.nbPeople;
         const density = dataItem.density;
+        const dateandtime = dataItem.time;
+        const d = dateandtime.split("T")
+        const date = d[0]
+        const time = d[1].replace("Z", "")
 
         return <div className="tooltipBox">
             < div className="tooltipTitle" > {id}</div >
             <div>
+                <div className="tooltipRow">
+                    <div className="tooltipLbl">Date:</div>
+                    <div className="tooltipVal">{date}</div>
+                </div>
+                <div className="tooltipRow">
+                    <div className="tooltipLbl">Time:</div>
+                    <div className="tooltipVal">{time}</div>
+                </div>
                 <div className="tooltipRow">
                     <div className="tooltipLbl">Latitude:</div>
                     <div className="tooltipVal">{latitude}</div>
