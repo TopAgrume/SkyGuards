@@ -48,7 +48,7 @@
       val boundedLon = newLon.max(2.28f).min(2.39f).toFloat
       val boundedLat = newLat.max(48.82f).min(48.89f).toFloat
 
-      Location(boundedLon, boundedLat)
+      Location(boundedLat,boundedLon)
     }
 
     def generateTimestamp(): String = {
@@ -63,24 +63,24 @@
 
     def generatePeople(scenario: Int, surface: Int): Int = {
 
-      val max_people : Int = 3000
+      val max_people : Int = surface * 10
 
       scenario match {
         case 1 =>
-          if (Random.nextDouble() < 0.8) {
-            Random.between(surface, (surface * 7).toInt)
+          if (Random.nextDouble() < 0.9) {
+            Random.between(surface, (surface * 6).toInt)
           } else {
             Random.between((surface * 7).toInt, max_people)
           }
         case 2 =>
-          if (Random.nextDouble() < 0.65) {
-            Random.between(surface, (surface * 7).toInt)
+          if (Random.nextDouble() < 0.8) {
+            Random.between(surface, (surface * 6).toInt)
           } else {
             Random.between((surface * 7).toInt, max_people)
           }
         case 3 =>
-          if (Random.nextDouble() < 0.4) {
-            Random.between(surface, (surface * 7).toInt)
+          if (Random.nextDouble() < 0.7) {
+            Random.between(surface, (surface * 6).toInt)
           } else {
             Random.between((surface * 7).toInt, max_people)
           }
