@@ -37,7 +37,7 @@ SkyGuard is a project aimed at preventing mass casualties in crowded spaces. By 
 
 # Website
 
-![image_website](https://cdn.discordapp.com/attachments/1218983554244022314/1257813022181953629/image.png?ex=6685c529&is=668473a9&hm=6538b6a10f72110c5f24454bc0e706818cc913623c836c394b2062228cd40746&)
+![image_website](https://cdn.discordapp.com/attachments/1218983554244022314/1257814563919757442/image.png?ex=6685c699&is=66847519&hm=defc00a413f9f5d0e81ca78336ede57a0138594044b5958a8984fc35295b69a9&)
 
 # Authors
 alexandre.devaux-riviere\
