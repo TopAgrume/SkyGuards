@@ -27,9 +27,10 @@ object Main {
     println("Reading from kafka-stream-1")
     val content_df = spark.readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", "kafka-broker-1:9092") // kafka-broker-1:9092
+      .option("kafka.bootstrap.servers", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092") // kafka-broker-1:9092
       .option("subscribe", "reports")
       .option("startingOffsets", "earliest")
+      .option("groupId", "skyguards-consumer-group")
       .load()
 
     // Select and parse the value column
@@ -52,9 +53,14 @@ object Main {
     val query = alert_json_df
       .writeStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", "kafka-broker-1:9092") // kafka-broker-1:9092
+      .option("kafka.bootstrap.servers", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092") // kafka-broker-1:9092
       .option("topic", "alerts")
       .option("checkpointLocation", "/tmp/kafka-checkpoint")
+      .option("kafka.acks", "all")
+      .option("kafka.retries", "3")
+      .option("kafka.max.in.flight.requests.per.connection", "1")
+      .outputMode("append")
+      .queryName("AlertsQuery")
       .start()
 
     /*println("Logging in the console:")
