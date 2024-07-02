@@ -23,10 +23,7 @@ interface DroneData {
     latitude: number;
     longitude: number;
     nbPeople: number;
-    battery: number;
-    speed: number;
-    surface: number;
-    temperature: number;
+    density: number;
 }
 
 const parseValue = (val: string, type: string): number | string | Date => {
@@ -102,8 +99,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
     public map!: IgrGeographicMap;
     public tileImagery: IgrTileGeneratorMapImagery;
-    private interval: NodeJS.Timeout | null = null;
-
+    private fetchInterval: NodeJS.Timeout | null = null;
     constructor(props: any) {
         super(props);
 
@@ -137,43 +133,21 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
     }
 
-    // public componentDidMount() {
-    //     const query = `from(bucket: "website")
-    //         |> range(start: -2h)
-    //         |> filter(fn: (r) => r["_measurement"] == "drone")`;
-
-    //     axios.post('http://localhost:8086/api/v2/query?org=skyguards', query, {
-    //         headers: {
-    //             'Content-Type': 'application/vnd.flux',
-    //             'Accept': 'application/csv',
-    //             'Authorization': 'Token 6cf082b94f7132a1487bc05729e7a3ec08db8b8d811bf8194508ed4b15d7c353'
-    //         }
-    //     })
-    //         .then(response => {
-    //             const parsedData = parseAnnotatedCSV(response.data);
-    //             console.log("Parsed Data:", parsedData);
-    //             this.onDataLoaded(parsedData)
-    //         })
-    //         .catch(error => {
-    //             console.error(error);
-    //         });
-    // }
-
-
     public componentDidMount() {
         this.fetchData();
-        this.interval = setInterval(this.fetchData, 60000); // 60000 ms = 1 minute
+
+        this.fetchInterval = setInterval(this.fetchData, 60000);
     }
 
     public componentWillUnmount() {
-        if (this.interval) {
-            clearInterval(this.interval);
+        if (this.fetchInterval) {
+            clearInterval(this.fetchInterval);
         }
     }
 
     private fetchData = () => {
         const query = `from(bucket: "website")
-            |> range(start: -3h)
+            |> range(start: -2h)
             |> filter(fn: (r) => r["_measurement"] == "drone")`;
 
         axios.post('http://localhost:8086/api/v2/query?org=skyguards', query, {
@@ -202,7 +176,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
         const latitudes: number[] = [];
         const longitudes: number[] = [];
-        const populations: number[] = [];
+        const density: number[] = [];
         const droneMap: { [key: string]: Partial<DroneData> } = {};
 
         data.forEach(group => {
@@ -222,20 +196,11 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
                         droneMap[droneId].longitude = Number(row._value);
                         break;
                     case 'nbPeople':
-                        populations.push(Number(row._value));
                         droneMap[droneId].nbPeople = Number(row._value);
                         break;
-                    case 'battery':
-                        droneMap[droneId].battery = Number(row._value);
-                        break;
-                    case 'speed':
-                        droneMap[droneId].speed = Number(row._value);
-                        break;
-                    case 'surface':
-                        droneMap[droneId].surface = Number(row._value);
-                        break;
-                    case 'temperature':
-                        droneMap[droneId].temperature = Number(row._value);
+                    case 'density':
+                        droneMap[droneId].density = Number(row._value);
+                        density.push(Number(row._value));
                         break;
                     default:
                         break;
@@ -249,7 +214,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
         const gen = new IgrHeatTileGenerator();
         gen.xValues = longitudes;
         gen.yValues = latitudes;
-        gen.values = populations;
+        gen.values = density;
         gen.blurRadius = 10;
         gen.maxBlurRadius = 20;
         gen.useBlurRadiusAdjustedForZoom = true;
@@ -299,14 +264,13 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
         const dataItem = dataContext.item as any;
         if (!dataItem) return null;
+
+        console.log(dataItem);
         const latitude = WorldUtils.toStringLat(dataItem.latitude);
         const longitude = WorldUtils.toStringLon(dataItem.longitude);
         const id = dataItem.id;
-        const battery = dataItem.battery;
-        const speed = dataItem.speed;
         const nbPeople = dataItem.nbPeople;
-        const surface = dataItem.surface;
-        const temperature = dataItem.temperature;
+        const density = dataItem.density;
 
         return <div className="tooltipBox">
             < div className="tooltipTitle" > {id}</div >
@@ -320,22 +284,13 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
                     <div className="tooltipVal">{longitude}</div>
                 </div>
                 <div className="tooltipRow">
+                    <div className="tooltipLbl">NbPeople:</div>
+                    <div className="tooltipVal">{nbPeople}</div>
+                </div>
+                <div className="tooltipRow">
                     <div className="tooltipLbl">Densite:</div>
-                    <div className="tooltipVal">{(nbPeople / surface).toFixed(2)}</div>
+                    <div className="tooltipVal">{density.toFixed(2)}</div>
                 </div>
-                <div className="tooltipRow">
-                    <div className="tooltipLbl">Battery:</div>
-                    <div className="tooltipVal">{battery}</div>
-                </div>
-                <div className="tooltipRow">
-                    <div className="tooltipLbl">Speed:</div>
-                    <div className="tooltipVal">{speed}</div>
-                </div>
-                <div className="tooltipRow">
-                    <div className="tooltipLbl">Temperature:</div>
-                    <div className="tooltipVal">{temperature}</div>
-                </div>
-
             </div>
         </div >
     }

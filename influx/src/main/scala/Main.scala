@@ -44,7 +44,7 @@ object InfluxDBService {
 
     import spark.implicits._
 
-    val kafkaDF = spark.read
+    val kafkaDF = spark.readStream
       .format("kafka")
       .option("kafka.bootstrap.servers", "kafka-broker-1:9092")
       .option("subscribe", "reports")
@@ -68,46 +68,46 @@ object InfluxDBService {
       .selectExpr("CAST(value AS STRING) as json")
       .select(from_json(col("json"), jsonSchema).as("data"))
       .select("data.*")
-
-
-    // Create InfluxDB client once
-    val client = InfluxDBClientScalaFactory.create(influxUrl, influxToken.toCharArray, influxOrg, influxBucket)
     // Define the date formatter for the custom date format
-    val writeApi = client.getWriteScalaApi
     val inputDateFormatter = DateTimeFormatter.ofPattern("dd/MM/yy HH:mm:ss")
-    messagesDF.collect().foreach { row =>
-      val id = row.getAs[Int]("id")
 
-      val timestampStr = row.getAs[String]("timestamp")
-      val localDateTime = LocalDateTime.parse(timestampStr, inputDateFormatter).minusHours(2)
-      // Ensure the timestamp has zero milliseconds
-      val formattedTimestamp = localDateTime.withNano(0).toInstant(ZoneOffset.UTC)
+    val client = InfluxDBClientScalaFactory.create(influxUrl, influxToken.toCharArray, influxOrg, influxBucket)
+    val writeApi = client.getWriteScalaApi
 
-      val lon = row.getAs[Row]("pos").getAs[Double]("lon")
-      val lat = row.getAs[Row]("pos").getAs[Double]("lat")
-      val nbPeople = row.getAs[Int]("nbPeople")
-      val surface = row.getAs[Int]("surface")
-      val speed = row.getAs[Int]("speed")
-      val battery = row.getAs[Int]("battery")
-      val temperature = row.getAs[Int]("temperature")
+    // Process each row and write to InfluxDB
+    // Process each row and write to InfluxDB
+    messagesDF.writeStream
+      .foreachBatch((batchDF: org.apache.spark.sql.Dataset[org.apache.spark.sql.Row], batchId: Long) => {
+        batchDF.collect().foreach { row =>
+          val id = row.getAs[Int]("id")
+          val timestampStr = row.getAs[String]("timestamp")
+          val localDateTime = LocalDateTime.parse(timestampStr, inputDateFormatter).minusHours(2)
+          // Ensure the timestamp has zero milliseconds
+          val formattedTimestamp = localDateTime.withNano(0).toInstant(ZoneOffset.UTC)
 
-      // Create a Point object for each record
-      val point = Point.measurement("drone")
-        .addTag("id", id.toString)
-        .addField("lon", lon)
-        .addField("lat", lat)
-        .addField("nbPeople", nbPeople)
-        .addField("surface", surface)
-        .addField("speed", speed)
-        .addField("battery", battery)
-        .addField("temperature", temperature)
-        .time(formattedTimestamp.toEpochMilli, WritePrecision.MS)
+          val lon = row.getAs[Row]("pos").getAs[Double]("lon")
+          val lat = row.getAs[Row]("pos").getAs[Double]("lat")
+          val nbPeople = row.getAs[Int]("nbPeople")
+          val surface = row.getAs[Int]("surface")
 
-      val sourcePoint = Source.single(point)
-      val sinkPoint = writeApi.writePoint()
-      val materializedPoint = sourcePoint.toMat(sinkPoint)(Keep.right)
-      Await.result(materializedPoint.run(), Duration.Inf)
-    }
+          // Create a Point object for each record
+          val point = Point.measurement("drone")
+            .addTag("id", id.toString)
+            .addField("lon", lon)
+            .addField("lat", lat)
+            .addField("nbPeople", nbPeople)
+            .addField("density", nbPeople/surface)
+            .time(formattedTimestamp.toEpochMilli, WritePrecision.MS)
+
+          val sourcePoint = Source.single(point)
+          val sinkPoint = writeApi.writePoint()
+          val materializedPoint = sourcePoint.toMat(sinkPoint)(Keep.right)
+          Await.result(materializedPoint.run(), Duration.Inf)
+        }
+      })
+      .start()
+      .awaitTermination()
+
     spark.stop()
     client.close()
     system.terminate()
@@ -124,13 +124,7 @@ object InfluxDBService {
     @Column
     var nbPeople: Int = _
     @Column
-    var surface: Int = _
-    @Column
-    var speed: Int = _
-    @Column
-    var battery: Int = _
-    @Column
-    var temperature: Int = _
+    var density: Int = _
     @Column(timestamp = true)
     var timestamp: Instant = _
   }
