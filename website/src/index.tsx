@@ -13,14 +13,96 @@ import { IgrDataContext } from 'igniteui-react-core';
 import WorldUtils from "./WorldUtils"
 // background worker
 import Worker from 'worker-loader!./heatworker.worker.ts';
+import axios from 'axios';
 
 IgrDataChartInteractivityModule.register();
 IgrGeographicMapModule.register();
+
+interface DroneData {
+    id: string;
+    latitude: number;
+    longitude: number;
+    nbPeople: number;
+    battery: number;
+    speed: number;
+    surface: number;
+    temperature: number;
+}
+
+const parseValue = (val: string, type: string): number | string | Date => {
+    if (type === "long" || type === "duration" || type === "unsignedLong") {
+        return parseInt(val);
+    } else if (type === "double") {
+        return parseFloat(val);
+    } else if (type && type.match(/dateTime/)) {
+        return new Date(val);
+    } else {
+        const escapedVal = val.match(/^"(.*)"$/);
+        if (escapedVal) {
+            return escapedVal[1];
+        }
+        return val;
+    }
+};
+
+const parseAnnotatedCSV = (csvText: string): Array<Array<any>> => {
+    const rows = csvText.split(/\n/);
+    let result: { [key: string]: number | string | Date; }[][] = [];
+    let currentGroup = 0;
+    result[currentGroup] = [];
+    let isPreviousAnnotationRow = true;
+    let attrTypes: string[] = [];
+    let columnNames: string[] = [];
+    let defaultValues: string[] = [];
+
+    for (const r of rows) {
+        const row = r.trim();
+
+        if (row.length === 0) {
+            currentGroup++;
+            result[currentGroup] = [];
+            isPreviousAnnotationRow = true;
+            attrTypes = [];
+            columnNames = [];
+            defaultValues = [];
+            continue;
+        }
+
+        let cells = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+        cells = cells.slice(1);
+
+        if (row.match(/^#datatype/)) {
+            attrTypes = attrTypes.concat(cells);
+            isPreviousAnnotationRow = true;
+        } else if (row.match(/^#group/)) {
+            // ignoring this information
+        } else if (row.match(/^#default/)) {
+            defaultValues = defaultValues.concat(cells);
+        } else if (!row.match(/^#/) && isPreviousAnnotationRow) {
+            columnNames = columnNames.concat(cells);
+            isPreviousAnnotationRow = false;
+        } else {
+            let rowObj: { [key: string]: number | string | Date; } = {};
+            for (let i = 0; i < cells.length; i++) {
+                const cell = cells[i];
+                if (cell.length > 0) {
+                    rowObj[columnNames[i]] = parseValue(cell, attrTypes[i]);
+                } else {
+                    rowObj[columnNames[i]] = parseValue(defaultValues[i], attrTypes[i]);
+                }
+            }
+            result[currentGroup].push(rowObj);
+        }
+    }
+    return result;
+};
+
 
 export default class MapDisplayImageryHeatTiles extends React.Component {
 
     public map!: IgrGeographicMap;
     public tileImagery: IgrTileGeneratorMapImagery;
+    private interval: NodeJS.Timeout | null = null;
 
     constructor(props: any) {
         super(props);
@@ -28,6 +110,7 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
         this.tileImagery = new IgrTileGeneratorMapImagery();
         this.onMapRef = this.onMapRef.bind(this);
         this.onDataLoaded = this.onDataLoaded.bind(this);
+        this.fetchData = this.fetchData.bind(this);
     }
 
     public render(): JSX.Element {
@@ -54,55 +137,113 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
     }
 
-    public componentDidMount() {
-        const data = `
-            DroneID,Lat,Lon,PopulationDensity,Speed,Battery
-            Drone1,48.8566,2.3522,0.1,10,29
-            Drone2,48.8570,2.3540,0.19,20,30
-            Drone3,48.8580,2.3550,0.18,30,31
-            Drone4,48.8590,2.3560,0.17,40,32
-            Drone5,48.8600,2.3570,0.16,50,33
-            Drone6,48.8610,2.3580,0.15,60,34
-            Drone7,48.8620,2.3590,0.14,70,35
-            Drone8,48.8647,2.3490,0.20,15,50
-            Drone9,48.8670,2.3318,0.18,18,55
-            Drone10,48.8700,2.3294,0.17,12,53
-            Drone11,48.8738,2.2950,0.18,20,60
-            Drone12,48.8584,2.2945,0.16,22,45
-            Drone13,48.8606,2.3376,0.15,25,48
-            Drone14,48.8529,2.3470,0.14,28,49
-            Drone15,48.8614,2.3447,0.14,30,52
-            Drone16,48.8668,2.3350,0.15,35,47
-            Drone17,48.8721,2.3430,0.14,40,46
-            Drone18,48.8757,2.3456,0.13,45,44
-            Drone19,48.8512,2.3696,0.13,50,42
-            Drone20,48.8358,2.3621,1,55,41`.trim();
+    // public componentDidMount() {
+    //     const query = `from(bucket: "website")
+    //         |> range(start: -2h)
+    //         |> filter(fn: (r) => r["_measurement"] == "drone")`;
 
-        this.onDataLoaded(data)
+    //     axios.post('http://localhost:8086/api/v2/query?org=skyguards', query, {
+    //         headers: {
+    //             'Content-Type': 'application/vnd.flux',
+    //             'Accept': 'application/csv',
+    //             'Authorization': 'Token 6cf082b94f7132a1487bc05729e7a3ec08db8b8d811bf8194508ed4b15d7c353'
+    //         }
+    //     })
+    //         .then(response => {
+    //             const parsedData = parseAnnotatedCSV(response.data);
+    //             console.log("Parsed Data:", parsedData);
+    //             this.onDataLoaded(parsedData)
+    //         })
+    //         .catch(error => {
+    //             console.error(error);
+    //         });
+    // }
+
+
+    public componentDidMount() {
+        this.fetchData();
+        this.interval = setInterval(this.fetchData, 60000); // 60000 ms = 1 minute
     }
 
-    public onDataLoaded(csvData: string) {
-        const csvLines = csvData.split("\n");
+    public componentWillUnmount() {
+        if (this.interval) {
+            clearInterval(this.interval);
+        }
+    }
+
+    private fetchData = () => {
+        const query = `from(bucket: "website")
+            |> range(start: -3h)
+            |> filter(fn: (r) => r["_measurement"] == "drone")`;
+
+        axios.post('http://localhost:8086/api/v2/query?org=skyguards', query, {
+            headers: {
+                'Content-Type': 'application/vnd.flux',
+                'Accept': 'application/csv',
+                'Authorization': 'Token 6cf082b94f7132a1487bc05729e7a3ec08db8b8d811bf8194508ed4b15d7c353'
+            }
+        })
+            .then(response => {
+                const parsedData = parseAnnotatedCSV(response.data);
+                this.onDataLoaded(parsedData);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
+
+
+    public onDataLoaded(data: Array<Array<any>>) {
+        this.map.series.clear();
+        if (!Array.isArray(data)) {
+            console.error("Parsed data is not an array:", data);
+            return;
+        }
 
         const latitudes: number[] = [];
         const longitudes: number[] = [];
         const populations: number[] = [];
-        const drone: any[] = [];
+        const droneMap: { [key: string]: Partial<DroneData> } = {};
 
-        // parsing CSV data and creating geographic locations
-        for (let i = 1; i < csvLines.length; i++) {
-            const columns = csvLines[i].split(",");
-            latitudes.push(Number(columns[1]));
-            longitudes.push(Number(columns[2]));
-            populations.push(Number(columns[3]));
-            drone.push({
-                id: columns[0],
-                latitude: Number(columns[1]),
-                longitude: Number(columns[2]),
-                battery: Number(columns[4]),
-                speed: Number(columns[5])
+        data.forEach(group => {
+            group.forEach(row => {
+                const droneId = row.id;
+                if (!droneMap[droneId]) {
+                    droneMap[droneId] = { id: droneId };
+                }
+
+                switch (row._field) {
+                    case 'lat':
+                        latitudes.push(Number(row._value));
+                        droneMap[droneId].latitude = Number(row._value);
+                        break;
+                    case 'lon':
+                        longitudes.push(Number(row._value));
+                        droneMap[droneId].longitude = Number(row._value);
+                        break;
+                    case 'nbPeople':
+                        populations.push(Number(row._value));
+                        droneMap[droneId].nbPeople = Number(row._value);
+                        break;
+                    case 'battery':
+                        droneMap[droneId].battery = Number(row._value);
+                        break;
+                    case 'speed':
+                        droneMap[droneId].speed = Number(row._value);
+                        break;
+                    case 'surface':
+                        droneMap[droneId].surface = Number(row._value);
+                        break;
+                    case 'temperature':
+                        droneMap[droneId].temperature = Number(row._value);
+                        break;
+                    default:
+                        break;
+                }
             });
-        }
+        });
+
+        const drone = Object.values(droneMap) as DroneData[];
 
         // generating heat map imagery tiles
         const gen = new IgrHeatTileGenerator();
@@ -158,15 +299,17 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
 
         const dataItem = dataContext.item as any;
         if (!dataItem) return null;
-
         const latitude = WorldUtils.toStringLat(dataItem.latitude);
         const longitude = WorldUtils.toStringLon(dataItem.longitude);
         const id = dataItem.id;
         const battery = dataItem.battery;
         const speed = dataItem.speed;
+        const nbPeople = dataItem.nbPeople;
+        const surface = dataItem.surface;
+        const temperature = dataItem.temperature;
 
         return <div className="tooltipBox">
-            <div className="tooltipTitle">{id}</div>
+            < div className="tooltipTitle" > {id}</div >
             <div>
                 <div className="tooltipRow">
                     <div className="tooltipLbl">Latitude:</div>
@@ -177,6 +320,10 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
                     <div className="tooltipVal">{longitude}</div>
                 </div>
                 <div className="tooltipRow">
+                    <div className="tooltipLbl">Densite:</div>
+                    <div className="tooltipVal">{(nbPeople / surface).toFixed(2)}</div>
+                </div>
+                <div className="tooltipRow">
                     <div className="tooltipLbl">Battery:</div>
                     <div className="tooltipVal">{battery}</div>
                 </div>
@@ -184,8 +331,13 @@ export default class MapDisplayImageryHeatTiles extends React.Component {
                     <div className="tooltipLbl">Speed:</div>
                     <div className="tooltipVal">{speed}</div>
                 </div>
+                <div className="tooltipRow">
+                    <div className="tooltipLbl">Temperature:</div>
+                    <div className="tooltipVal">{temperature}</div>
+                </div>
+
             </div>
-        </div>
+        </div >
     }
 }
 
