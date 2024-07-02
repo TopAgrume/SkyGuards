@@ -19,5 +19,5 @@ object Main extends App {
     .map(id => new Thread(new SkyGuard(id, scenario, props)))
     .foreach(t => t.start())
 
-  Thread.sleep(1000 * 5)
+  Thread.sleep(1000 * 60)
 }

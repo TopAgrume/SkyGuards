@@ -225,6 +225,11 @@ services:
       SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode:9864"
     env_file:
       - ./hadoop.env
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://resourcemanager:8088 || exit 1" ]
+      interval: 4s
+      timeout: 4s
+      retries: 10
 
   nodemanager1:
     image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
@@ -328,6 +333,53 @@ services:
       - discord_bot
       - telegram_bot
     restart: "no"
+
+  analysis:
+    build:
+      context: ./analysis
+    depends_on:
+      - spark-master-hdfs
+      - hdfs
+    restart: "no"
+
+  influxdb:
+    image: influxdb:2.1.1
+    volumes:
+      - influxdb-storage:/var/lib/influxdb2:rw
+    env_file:
+      - .env
+    entrypoint: [ "./entrypoint.sh" ]
+    restart: on-failure:10
+    ports:
+      - ${DOCKER_INFLUXDB_INIT_PORT}:8086
+
+  grafana:
+    image: grafana/grafana-oss:8.4.3
+    volumes:
+      - grafana-storage:/var/lib/grafana:rw
+    depends_on:
+      - influxdb
+    ports:
+      - ${GRAFANA_PORT}:3000
+
+  influx:
+    build:
+      ./influx
+    depends_on:
+      - grafana
+      - kafka
+      - spark
+    restart: "no"
+    environment:
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: "6cf082b94f7132a1487bc05729e7a3ec08db8b8d811bf8194508ed4b15d7c353"
+      DOCKER_INFLUXDB_INIT_ORG: "skyguards"
+      DOCKER_INFLUXDB_INIT_BUCKET: "website"
+      DOCKER_INFLUXDB_INIT_PORT: 8086
+      DOCKER_INFLUXDB_INIT_HOST: "influxdb"
+    networks:
+      - spark-network
+      - default
+
 networks:
   spark-network:
     driver: bridge
@@ -336,3 +388,5 @@ volumes:
   hadoop_namenode:
   hadoop_datanode:
   hadoop_historyserver:
+  grafana-storage:
+  influxdb-storage:

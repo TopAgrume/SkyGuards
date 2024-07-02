@@ -15,7 +15,7 @@ final case class Report(
                        )
 
 object Main {
-  val hdfs_master = "hdfs://localhost:9000/"
+  val hdfs_master = "hdfs://namenode:9000/"
   val spark = SparkSession.builder
     .appName("Analysis")
     .master("local")

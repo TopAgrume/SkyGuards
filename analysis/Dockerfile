@@ -4,6 +4,8 @@ COPY . /app
 
 WORKDIR /app
 
+RUN sbt clean
+
 RUN sbt compile
 
 ENTRYPOINT sbt run
