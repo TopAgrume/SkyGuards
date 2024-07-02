@@ -48,7 +48,7 @@
       val boundedLon = newLon.max(2.28f).min(2.39f).toFloat
       val boundedLat = newLat.max(48.82f).min(48.89f).toFloat
 
-      Location(boundedLon, boundedLat)
+      Location(boundedLat, boundedLon)
     }
 
     def generateTimestamp(): String = {
