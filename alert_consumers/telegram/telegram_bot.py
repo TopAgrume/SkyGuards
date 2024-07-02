@@ -1,10 +1,13 @@
 import asyncio
-import os, time
+import os, time, json
 from confluent_kafka import Consumer, KafkaException, KafkaError
 from telegram import Bot
 
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
-CHAT_ID = int(os.getenv('CHAT_ID'))
+CHAT_ID_1 = int(os.getenv('CHAT_ID_1'))
+CHAT_ID_2 = int(os.getenv('CHAT_ID_2'))
+CHAT_ID_3 = int(os.getenv('CHAT_ID_3'))
+
 
 KAFKA_CONFIG = {
     'bootstrap.servers': os.getenv('KAFKA_BOOTSTRAP_SERVERS'),
@@ -14,9 +17,44 @@ KAFKA_CONFIG = {
 
 bot = Bot(token=TELEGRAM_TOKEN)
 
+def convert_coordinates_to_sector(lat: float, long: float):
+    mid_lat = 48.82 + (48.89 - 48.82) / 2
+    mid_lon = 2.28 + (2.39 - 2.28) / 2
+    if lat <= mid_lat:
+        if long <= mid_lon:
+            return '1'
+        else:
+            return '2'
+    else:
+        if long <= mid_lon:
+            return '3'
+        else:
+            return '4'
+
 async def send_message(message):
-    print("Sending telegram message:", message)
-    await bot.send_message(chat_id=CHAT_ID, text=message)
+    try:
+        message = json.loads(message)
+    except json.JSONDecodeError:
+        print("Failed to parse message as JSON")
+        return
+
+    print("Sending discord message:", message['timestamp'])
+    print(f"Received coordinates: lat={message['pos']['lat']}, lon={message['pos']['lon']}")
+
+    sector = convert_coordinates_to_sector(message['pos']['lat'], message['pos']['lon'])
+    message = (
+            f"🚨 **HIGH DENSITY ALERT** 🚨\n"
+            f"**Location**: {message['pos']['lat']}, {message['pos']['lon']}\n"
+            f"**Time**: {message['timestamp']}\n"
+            f"**People**: {message['nbPeople']}\n"
+            f"**Density**: {message['density']:.2f} people/m²\n"
+            f"**Area**: {message['surface']} m²\n"
+            f"**Sector**: {sector}\n"
+            f"**Action**: Immediate response required."
+        )
+    await bot.send_message(chat_id=CHAT_ID_1, text=message, parse_mode='Markdown')
+    await bot.send_message(chat_id=CHAT_ID_2, text=message, parse_mode='Markdown')
+    await bot.send_message(chat_id=CHAT_ID_3, text=message, parse_mode='Markdown')
 
 def kafka_consumer():
     consumer = Consumer(KAFKA_CONFIG)
