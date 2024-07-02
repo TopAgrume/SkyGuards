@@ -46,9 +46,10 @@ object InfluxDBService {
 
     val kafkaDF = spark.readStream
       .format("kafka")
-      .option("kafka.bootstrap.servers", "kafka-broker-1:9092")
+      .option("kafka.bootstrap.servers", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
       .option("subscribe", "reports")
       .option("startingOffsets", "earliest")
+      .option("groupId", "influxdb-consumer-group")
       .load()
 
     // Define the schema of your JSON data
@@ -104,6 +105,8 @@ object InfluxDBService {
           Await.result(materializedPoint.run(), Duration.Inf)
         }
       })
+      .outputMode("append")
+      .option("checkpointLocation", "/tmp/kafka-checkpoint")
       .start()
       .awaitTermination()
 

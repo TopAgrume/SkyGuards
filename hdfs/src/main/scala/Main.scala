@@ -15,7 +15,7 @@ object Main {
 
     val kafkaDF = spark.read
       .format("kafka")
-      .option("kafka.bootstrap.servers", "kafka-broker-1:9092")
+      .option("kafka.bootstrap.servers", "kafka-broker-1:9092,kafka-broker-2:9092,kafka-broker-3:9092")
       .option("subscribe", "reports")
       .option("startingOffsets", "earliest")
       .load()
