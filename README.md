@@ -30,6 +30,15 @@ SkyGuard is a project aimed at preventing mass casualties in crowded spaces. By 
 # Project Architecture
 ![image_archi](https://github.com/TopAgrume/SkyGuards/blob/main/SkyGuards_Architecture.png)
 
+# Alerts Telegram & Discord
+
+![image_discord](https://cdn.discordapp.com/attachments/1218983554244022314/1257812079398752297/image.png?ex=6685c448&is=668472c8&hm=a36290600b2f5bdfef78c794e5126a6a33ded6f7270a305d362fa2ea565348a4&)\
+![image_telegram](https://cdn.discordapp.com/attachments/1218983554244022314/1257812326300516412/image.png?ex=6685c483&is=66847303&hm=7bb84f5eaf15b1ed05592a5dde93e3269f41a130a780f4f758e18ee3699547f5&)
+
+# Website
+
+![image_website](https://cdn.discordapp.com/attachments/1218983554244022314/1257813022181953629/image.png?ex=6685c529&is=668473a9&hm=6538b6a10f72110c5f24454bc0e706818cc913623c836c394b2062228cd40746&)
+
 # Authors
 alexandre.devaux-riviere\
 paul.duhot\
