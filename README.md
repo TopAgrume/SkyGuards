@@ -1,8 +1,8 @@
 # Data Engineering Project
 This repository contains the final project for the data engineering course.
 
-## SkyGuard
-SkyGuard is an innovative project designed to prevent mass casualties in crowded spaces. By strategically deploying drones, we monitor crowd density and alert authorities when danger thresholds are exceeded. Our proactive approach aims to reduce the annual toll of 2000 lives lost to overcrowding incidents, enhancing public safety with advanced analytics and real-time insights.
+## SkyGuards
+SkyGuards is an innovative project designed to prevent mass casualties in crowded spaces. By strategically deploying drones, we monitor crowd density and alert authorities when danger thresholds are exceeded. Our proactive approach aims to reduce the annual toll of 2000 lives lost to overcrowding incidents, enhancing public safety with advanced analytics and real-time insights.
 
 ## Workflow
 
