@@ -5,6 +5,7 @@ This repository contains the final project for the data engineering course.
 SkyGuards is a project aimed at preventing mass casualties in crowded spaces. By deploying drones strategically, we monitor crowd density and alert authorities when danger thresholds are exceeded. Our proactive approach aims to reduce the annual toll of 2000 lives lost to overcrowding incidents, enhancing public safety and saving lives, with advanced analytics and real-time insights.
 
 ## Workflow
+![Project Architecture](images/SkyGuards_Architecture.png)
 
 1. **Report Generation and Kafka Streaming**
    - **SkyGuard Drones:** Generate crowd density reports stored in the `./skyguards` directory.
@@ -26,9 +27,6 @@ SkyGuards is a project aimed at preventing mass casualties in crowded spaces. By
 42sh$ docker-compose up analysis    # Run the HDFS service and generate analysis
 42sh$ ./start_website.sh            # Start the website
 ```
-
-## Project Architecture
-![Project Architecture](images/SkyGuards_Architecture.png)
 
 ## Alerts on Telegram & Discord
 ![Discord Alert](images/discord_alert.png)
